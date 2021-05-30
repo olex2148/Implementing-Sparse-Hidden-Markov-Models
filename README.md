@@ -346,15 +346,79 @@ g = sns.lmplot(x = 'n', y = 'time',
                     data = concatenated, fit_reg=False)
 g.set(ylim = (0, max(concatenated['time'])))
 ```
+```python
+concatenated_vanilla['divided'] = concatenated_vanilla['time']/(concatenated_vanilla['n'])
+g = sns.lmplot(x = 'n', y = 'divided', 
+                    hue = 'dataset', markers='.', scatter_kws={"s":40, "alpha":0.15}, palette = "Set1",
+                    data = concatenated_vanilla, fit_reg=False)
+g.set(ylim = (0, 0.00005), xlabel = 'N', ylabel = 'Time [s]')
+g._legend.set_title("Algorithm")
+```
+```python
+def time_algo_matrix(ks, algo, proportion):
+    ks_, times = [], []
+    seq = random_seq(100)
+
+    for k in ks:
+      
+        init = np.random.rand(k).round(2) 
+        trans = random_trans(k, proportion)
+        emis = random_emis(k)
+
+        hmm = hidden_markov(init, trans, emis)
+        
+        start = time.time()
+        algo(seq, hmm)
+        end = time.time()
+        
+        runningtime = end - start
+        ks_.append(k)
+        times.append(runningtime)
+        
+    return pd.DataFrame({'k': ks_, 'time': times})
+
+    print(time_algo_matrix(ks, scale_forward))
+```
+
+```python
+no_reps = 1 #Number of repetitions
+min_k, max_k = 1, 300 #Range of lenghts of k
+ks = []
+for k in range(min_k, max_k):
+    ks.extend([k] * no_reps)
+
+time_measure_viterbi = time_algo_matrix(ks, viterbi, 0)
+time_measure_viterbi_90 = time_algo_matrix(ks, viterbi, 0.9)
+time_measures_sparseviterbi = time_algo_matrix(ks, sparse_viterbi, 0)
+time_measures_sparseviterbi_30 = time_algo_matrix(ks, sparse_viterbi, 0.3)
+time_measures_sparseviterbi_60 = time_algo_matrix(ks, sparse_viterbi, 0.6)
+time_measures_sparseviterbi_90 = time_algo_matrix(ks, sparse_viterbi, 0.9)
+concatenated_viterbi = pd.concat(
+    [time_measure_viterbi.assign(dataset='Viterbi (0%)'),
+    time_measure_viterbi_90.assign(dataset='Viterbi (90%)'),
+    time_measures_sparseviterbi.assign(dataset='Sparse Viterbi (0%)'),
+    time_measures_sparseviterbi_30.assign(dataset='Sparse Viterbi (30%)'),
+    time_measures_sparseviterbi_60.assign(dataset='Sparse Viterbi (60%)'),
+    time_measures_sparseviterbi_90.assign(dataset='Sparse Viterbi (90%)')])
+```
+
+```python
+g = sns.lmplot(x = 'k', y = 'time', 
+                    hue = 'dataset', markers='.', scatter_kws={"s":40}, palette = "Set1",
+                    data = concatenated_viterbi, fit_reg=False)
+g.set(ylim = (0, 12), xlabel = 'K', ylabel = 'Time [s]')
+g._legend.set_title("Algorithm and sparseness")
+```
 
 
-
-
-
-
-
-
-
+```python
+concatenated_viterbi['divided'] = concatenated_viterbi['time']/(concatenated_viterbi['k']*concatenated_viterbi['k'])
+g = sns.lmplot(x = 'k', y = 'divided', 
+                    hue = 'dataset', markers='.', scatter_kws={"s":40}, palette = "Set1",
+                    data = concatenated_viterbi, fit_reg=False)
+g.set(ylim = (0, 0.0002), xlabel = 'K', ylabel = 'Time [s/K^2]')
+g._legend.set_title("Algorithm and sparseness")
+```
 
 
 
